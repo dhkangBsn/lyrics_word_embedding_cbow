@@ -149,9 +149,24 @@ print('losses',losses)  # The loss decreased every iteration over the training d
 
 print('total embeddings',
       model.embeddings.weight)
+torch.save({
+            'epoch': epoch,
+            'model_state_dict': model.state_dict(),
+            'optimizer_state_dict': optimizer.state_dict(),
+            'loss': loss,
+            'vocab' : dataset.vocab,
+            'word_to_ix' : dataset.word_to_ix,
+            'EMBEDDING_DIM' : EMBEDDING_DIM,
+            'CONTEXT_SIZE' : CONTEXT_SIZE,
+            'BATCH_SIZE' : BATCH_SIZE,
+            }, './model')
 
-torch.save(model.state_dict(), './model')
+checkpoint = torch.load('./model')
+EMBEDDING_DIM = checkpoint['EMBEDDING_DIM']
+CONTEXT_SIZE = checkpoint['CONTEXT_SIZE']
+BATCH_SIZE = checkpoint['BATCH_SIZE']
 model = CBOW(len(dataset.vocab), EMBEDDING_DIM, CONTEXT_SIZE, BATCH_SIZE)
-model.load_state_dict(torch.load('./model'))
+model.load_state_dict(checkpoint['model_state_dict'])
 print(model.eval())
 print(model.embeddings.weight)
+
