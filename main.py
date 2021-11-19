@@ -6,6 +6,7 @@ from torch.utils.data import Dataset
 from torch.utils.data import DataLoader
 import pandas as pd
 import MeCab
+import numpy as np
 
 CONTEXT_SIZE = 2  # 2 words to the left, 2 to    the right
 # Embedding Dimension
@@ -50,8 +51,10 @@ class CustomDataset(Dataset):
                       + [temp[i + j + 1] for j in range(CONTEXT_SIZE)]
               )
               target = temp[i]
+
               self.data.append([context, target])
 
+      self.context = li_temp
       self.x_ = []
       self.y_ = []
       for temp in li_temp:
@@ -142,6 +145,8 @@ for epoch in range(1, nb_epochs+1):
         # Get the Python number from a 1-element Tensor by calling tensor.item()
         total_loss += loss.item()
     losses.append(total_loss)
+
+
 print('losses',losses)  # The loss decreased every iteration over the training data!
 
 # To get the embedding of a particular word, e.g. "beauty"
@@ -149,24 +154,44 @@ print('losses',losses)  # The loss decreased every iteration over the training d
 
 print('total embeddings',
       model.embeddings.weight)
+
+embedding = []
+embedding_document = []
+for context_line in dataset.context:
+    embedding_temp = []
+    for word in context_line:
+        word_embedding = np.array(model.embeddings.weight[dataset.word_to_ix[word]].tolist())
+        embedding_temp.append(word_embedding)
+    embedding_document.append(np.mean(embedding_temp, axis=0).tolist())
+    embedding.append(embedding_temp)
+
 torch.save({
             'epoch': epoch,
             'model_state_dict': model.state_dict(),
             'optimizer_state_dict': optimizer.state_dict(),
             'loss': loss,
             'vocab' : dataset.vocab,
+            'context' : dataset.context,
             'word_to_ix' : dataset.word_to_ix,
+            'embedding' : embedding,
+            'embedding_document' : embedding_document,
             'EMBEDDING_DIM' : EMBEDDING_DIM,
             'CONTEXT_SIZE' : CONTEXT_SIZE,
             'BATCH_SIZE' : BATCH_SIZE,
-            }, './model')
+            }, './model_temp')
 
-checkpoint = torch.load('./model')
+checkpoint = torch.load('./model_temp')
 EMBEDDING_DIM = checkpoint['EMBEDDING_DIM']
 CONTEXT_SIZE = checkpoint['CONTEXT_SIZE']
 BATCH_SIZE = checkpoint['BATCH_SIZE']
-model = CBOW(len(dataset.vocab), EMBEDDING_DIM, CONTEXT_SIZE, BATCH_SIZE)
+vocab = checkpoint['vocab']
+context = checkpoint['context']
+word_to_ix = checkpoint['word_to_ix']
+embedding_document = checkpoint['embedding_document']
+model = CBOW(len(vocab), EMBEDDING_DIM, CONTEXT_SIZE, BATCH_SIZE)
 model.load_state_dict(checkpoint['model_state_dict'])
-print(model.eval())
-print(model.embeddings.weight)
-
+# print(model.eval())
+# print(model.embeddings.weight)
+print(embedding_document[:10])
+print(len(embedding_document))
+print(len(embedding_document[0]))
