@@ -1,4 +1,3 @@
-# clustering for embedding
 ## lyrics analysis / EDA
 - process : embedding -> auto encoder (hidden state) -> 2 dim data -> clustering
 - objective : korean ballad analysis for topic extraction
